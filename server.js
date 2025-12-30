@@ -226,7 +226,10 @@ app.post('/api/generate-reply',
     }
   }
 );
-
+app.post('/api/reply', (req, res) => {
+  const prompt = req.body.prompt || "No prompt provided";
+  res.json({ reply: `You sent: ${prompt}` });
+});
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -262,3 +265,4 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
