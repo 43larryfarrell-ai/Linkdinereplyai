@@ -230,6 +230,19 @@ app.post('/api/reply', (req, res) => {
   const prompt = req.body.prompt || "No prompt provided";
   res.json({ reply: `You sent: ${prompt}` });
 });
+// Browser test endpoint
+app.get('/api/reply', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'API is live. Use POST /api/reply to send data.'
+  });
+});
+
+// POST endpoint (already working)
+app.post('/api/reply', (req, res) => {
+  const prompt = req.body.prompt || "No prompt provided";
+  res.json({ reply: `You sent: ${prompt}` });
+}); 
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({
@@ -265,4 +278,5 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
 
