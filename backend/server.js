@@ -61,16 +61,12 @@ if (!GEMINI_API_KEYS_STRING && fs.existsSync('/etc/secrets/.env')) {
     const secretContent = fs.readFileSync('/etc/secrets/.env', 'utf8');
     const lines = secretContent.split('\n');
     for (const line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('GEMINI_API_KEYS=')) {
-        GEMINI_API_KEYS_STRING = trimmed.substring('GEMINI_API_KEYS='.length).trim();
-        console.log('✅ Found GEMINI_API_KEYS in Secret File');
-        break;
-      } else if (trimmed.startsWith('GEMINI_API_KEY=')) {
-        GEMINI_API_KEYS_STRING = trimmed.substring('GEMINI_API_KEY='.length).trim();
-        console.log('✅ Found GEMINI_API_KEY in Secret File');
-        break;
-      }
+     const getRandomGeminiKey = () => {
+  if (GEMINI_API_KEYS.length === 0) {
+    throw new Error('No Gemini API keys available - check environment variable');
+  }
+  return GEMINI_API_KEYS[Math.floor(Math.random() * GEMINI_API_KEYS.length)];
+
     }
   } catch (error) {
     console.error('❌ Error reading Secret File:', error.message);
