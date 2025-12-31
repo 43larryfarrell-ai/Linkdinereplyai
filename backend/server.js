@@ -10,7 +10,34 @@
  * - Error handling
  */
 
-require('dotenv').config();
+// Load environment variables from multiple possible locations
+// Render Secret Files can be in app root or /etc/secrets/
+const path = require('path');
+const fs = require('fs');
+
+// Try to load .env from multiple locations
+const envPaths = [
+  path.join(__dirname, '.env'),           // Local development
+  path.join(process.cwd(), '.env'),        // App root
+  '/etc/secrets/.env',                     // Render Secret Files location
+  path.join(__dirname, '..', '.env')       // Parent directory
+];
+
+let envLoaded = false;
+for (const envPath of envPaths) {
+  if (fs.existsSync(envPath)) {
+    require('dotenv').config({ path: envPath });
+    console.log(`✅ Loaded .env from: ${envPath}`);
+    envLoaded = true;
+    break;
+  }
+}
+
+// Also try default dotenv behavior (current directory)
+if (!envLoaded) {
+  require('dotenv').config();
+}
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -34,10 +61,42 @@ if (GEMINI_API_KEYS_STRING) {
   GEMINI_API_KEYS = GEMINI_API_KEYS_STRING.split(',').map(key => key.trim()).filter(key => key.length > 0);
 }
 
+// Debug: Log environment variable status
+console.log('🔍 Environment Check:');
+console.log(`   NODE_ENV: ${NODE_ENV}`);
+console.log(`   PORT: ${PORT}`);
+console.log(`   GEMINI_API_KEYS_STRING exists: ${!!GEMINI_API_KEYS_STRING}`);
+if (GEMINI_API_KEYS_STRING) {
+  console.log(`   GEMINI_API_KEYS_STRING length: ${GEMINI_API_KEYS_STRING.length}`);
+  console.log(`   GEMINI_API_KEYS_STRING preview: ${GEMINI_API_KEYS_STRING.substring(0, 30)}...`);
+}
+console.log(`   Parsed keys count: ${GEMINI_API_KEYS.length}`);
+
+// Check for Secret Files location
+if (fs.existsSync('/etc/secrets/.env')) {
+  console.log('✅ Found Secret File at /etc/secrets/.env');
+  const secretContent = fs.readFileSync('/etc/secrets/.env', 'utf8');
+  console.log(`   Secret file size: ${secretContent.length} characters`);
+  console.log(`   Secret file preview: ${secretContent.substring(0, 50)}...`);
+}
+
 // Validate required environment variables
 if (GEMINI_API_KEYS.length === 0) {
-  console.error('ERROR: GEMINI_API_KEY or GEMINI_API_KEYS environment variable is required!');
-  console.error('Please create a .env file with:');
+  console.error('\n❌ ERROR: GEMINI_API_KEY or GEMINI_API_KEYS environment variable is required!');
+  console.error('\nTroubleshooting:');
+  console.error('1. Check if .env file exists in one of these locations:');
+  envPaths.forEach(p => {
+    const exists = fs.existsSync(p);
+    console.error(`   ${exists ? '✅' : '❌'} ${p}`);
+  });
+  console.error('2. For Render Secret Files:');
+  console.error('   - Go to Environment → Secret Files');
+  console.error('   - Filename should be: .env');
+  console.error('   - Make sure it contains: GEMINI_API_KEYS=key1,key2,key3');
+  console.error('3. For Environment Variables:');
+  console.error('   - Go to Environment → Environment Variables');
+  console.error('   - Add: GEMINI_API_KEYS with your keys (comma-separated)');
+  console.error('\nPlease create a .env file with:');
   console.error('  GEMINI_API_KEY=your_key (single key)');
   console.error('  OR');
   console.error('  GEMINI_API_KEYS=key1,key2,key3 (multiple keys for rotation)');
