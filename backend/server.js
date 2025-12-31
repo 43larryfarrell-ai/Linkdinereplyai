@@ -52,7 +52,31 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // API Key Rotation Configuration
 // Support multiple API keys for rotation (comma-separated)
 // Falls back to single GEMINI_API_KEY for backward compatibility
-const GEMINI_API_KEYS_STRING = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY;
+let GEMINI_API_KEYS_STRING = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY;
+
+// If not found in environment, try reading directly from Secret File
+if (!GEMINI_API_KEYS_STRING && fs.existsSync('/etc/secrets/.env')) {
+  console.log('📂 Reading directly from /etc/secrets/.env');
+  try {
+    const secretContent = fs.readFileSync('/etc/secrets/.env', 'utf8');
+    const lines = secretContent.split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('GEMINI_API_KEYS=')) {
+        GEMINI_API_KEYS_STRING = trimmed.substring('GEMINI_API_KEYS='.length).trim();
+        console.log('✅ Found GEMINI_API_KEYS in Secret File');
+        break;
+      } else if (trimmed.startsWith('GEMINI_API_KEY=')) {
+        GEMINI_API_KEYS_STRING = trimmed.substring('GEMINI_API_KEY='.length).trim();
+        console.log('✅ Found GEMINI_API_KEY in Secret File');
+        break;
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error reading Secret File:', error.message);
+  }
+}
+
 const API_KEY_COOLDOWN_MS = parseInt(process.env.API_KEY_COOLDOWN_MS) || 3600000; // 1 hour default
 
 // Parse API keys from environment variable
