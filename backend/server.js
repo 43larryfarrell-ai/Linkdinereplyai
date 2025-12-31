@@ -80,9 +80,16 @@ if (!GEMINI_API_KEYS_STRING && fs.existsSync('/etc/secrets/.env')) {
 const API_KEY_COOLDOWN_MS = parseInt(process.env.API_KEY_COOLDOWN_MS) || 3600000; // 1 hour default
 
 // Parse API keys from environment variable
+// Remove quotes if present (Render may add quotes)
 let GEMINI_API_KEYS = [];
 if (GEMINI_API_KEYS_STRING) {
-  GEMINI_API_KEYS = GEMINI_API_KEYS_STRING.split(',').map(key => key.trim()).filter(key => key.length > 0);
+  // Remove surrounding quotes if present
+  let cleaned = GEMINI_API_KEYS_STRING.trim();
+  if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || 
+      (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+    cleaned = cleaned.slice(1, -1);
+  }
+  GEMINI_API_KEYS = cleaned.split(',').map(key => key.trim()).filter(key => key.length > 0);
 }
 
 // Debug: Log environment variable status
