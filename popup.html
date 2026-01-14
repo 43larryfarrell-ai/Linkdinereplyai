@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Reply AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 400px;
+      min-height: 300px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+    }
+
+    .container {
+      padding: 20px;
+    }
+
+    h1 {
+      font-size: 20px;
+      color: #0077b5;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .status {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 15px;
+      padding: 8px;
+      background: #fff;
+      border-radius: 4px;
+    }
+
+    .upgrade-message {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 15px;
+      text-align: center;
+      display: none;
+    }
+
+    .upgrade-message.show {
+      display: block;
+    }
+
+    .upgrade-message p {
+      font-size: 13px;
+      color: #856404;
+      margin-bottom: 10px;
+    }
+
+    .upgrade-btn {
+      background: #0077b5;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .upgrade-btn:hover {
+      background: #005885;
+    }
+
+    .generate-btn {
+      width: 100%;
+      padding: 12px;
+      background: #0077b5;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: background 0.2s;
+    }
+
+    .generate-btn:hover:not(:disabled) {
+      background: #005885;
+    }
+
+    .generate-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 10px;
+      color: #0077b5;
+      font-size: 13px;
+    }
+
+    .loading.show {
+      display: block;
+    }
+
+    .loading-spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #0077b5;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .replies-container {
+      display: none;
+    }
+
+    .replies-container.show {
+      display: block;
+    }
+
+    .replies-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .reply-item {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 12px;
+      margin-bottom: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #333;
+      position: relative;
+    }
+
+    .reply-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: #f0f0f0;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 11px;
+      color: #666;
+    }
+
+    .copy-btn:hover {
+      background: #e0e0e0;
+    }
+
+    .error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      margin-bottom: 15px;
+      display: none;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    /* Pricing Screen Styles */
+    #upgradeScreen {
+      display: none;
+      text-align: center;
+    }
+
+    #mainContent {
+      display: block;
+    }
+
+    .pricing-header {
+      margin-bottom: 20px;
+    }
+
+    .pricing-header h2 {
+      font-size: 18px;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .pricing-header p {
+      font-size: 13px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .pricing-plans {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .plan-card {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+
+    .plan-card:hover {
+      border-color: #0077b5;
+      box-shadow: 0 2px 8px rgba(0, 119, 181, 0.15);
+    }
+
+    .plan-card.featured {
+      border-color: #0077b5;
+      background: linear-gradient(135deg, #0077b5 0%, #005885 100%);
+      color: white;
+    }
+
+    .plan-card.featured .plan-name,
+    .plan-card.featured .plan-price,
+    .plan-card.featured .plan-period {
+      color: white;
+    }
+
+    .plan-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .plan-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .plan-badge {
+      background: #0077b5;
+      color: white;
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .plan-card.featured .plan-badge {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .plan-price {
+      font-size: 24px;
+      font-weight: 700;
+      color: #333;
+      margin-bottom: 4px;
+    }
+
+    .plan-period {
+      font-size: 12px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .plan-features {
+      font-size: 12px;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .plan-card.featured .plan-features {
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .plan-features ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .plan-features li {
+      padding: 4px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+
+    .plan-features li:before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #0077b5;
+      font-weight: bold;
+    }
+
+    .plan-card.featured .plan-features li:before {
+      color: white;
+    }
+
+    .pay-btn {
+      width: 100%;
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .pay-btn:hover:not(:disabled) {
+      background: #059669;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .pay-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .pay-btn.loading {
+      background: #6b7280;
+    }
+
+    .pro-badge {
+      display: inline-block;
+      background: #10b981;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .free-tier-badge {
+      display: inline-block;
+      background: #f59e0b;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
+
+    .tier-indicator {
+      background: #fef3c7;
+      border: 1px solid #fbbf24;
+      border-radius: 6px;
+      padding: 10px 12px;
+      margin-bottom: 15px;
+      font-size: 12px;
+      color: #92400e;
+      text-align: center;
+    }
+
+    .tier-indicator.pro {
+      background: #d1fae5;
+      border-color: #10b981;
+      color: #065f46;
+    }
+
+    .tier-indicator .tier-label {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .tier-indicator .tier-details {
+      font-size: 11px;
+      opacity: 0.9;
+    }
+
+    .activate-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 10px 16px;
+      background: #0077b5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .activate-btn:hover {
+      background: #005885;
+    }
+
+    .payment-loading {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>LinkedIn Reply AI<span class="pro-badge" id="proBadge" style="display: none;">Pro ✓ Unlimited</span><span class="free-tier-badge" id="freeBadge" style="display: none;">Free Tier</span></h1>
+    
+    <!-- Main Content (Generate Button) -->
+    <div id="mainContent">
+      <!-- Tier Indicator -->
+      <div class="tier-indicator" id="tierIndicator" style="display: none;">
+        <div class="tier-label" id="tierLabel"></div>
+        <div class="tier-details" id="tierDetails"></div>
+      </div>
+      
+      <div class="status" id="status" style="display: none;"></div>
+      
+      <div class="error" id="error"></div>
+
+      <button class="generate-btn" id="generateBtn">Generate Replies</button>
+
+      <div class="loading" id="loading">
+        <span class="loading-spinner"></span>
+        Generating replies...
+      </div>
+
+      <div class="replies-container" id="repliesContainer">
+        <div class="replies-title">Reply Suggestions:</div>
+        <div id="repliesList"></div>
+      </div>
+    </div>
+
+    <!-- Pricing Screen (Shown during cooldown) -->
+    <div id="upgradeScreen">
+      <div class="pricing-header">
+        <h2>Unlock Unlimited AI Replies</h2>
+        <p>You've reached your free trial limit. Upgrade to Pro for unlimited AI replies anytime.</p>
+        <div style="margin-top: 12px; padding: 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; font-size: 11px; color: #0369a1; line-height: 1.4;">
+          💳 <strong>Pay with any crypto</strong> (BTC, USDT, etc.) — <strong>USDT-Tron recommended</strong> for low fees and smaller amounts
+        </div>
+      </div>
+
+      <div class="pricing-plans">
+        <div class="plan-card" id="planMonthly">
+          <div class="plan-header">
+            <div>
+              <div class="plan-name">Monthly Pro</div>
+              <div class="plan-price">$10.00</div>
+              <div class="plan-period">per month (recurring)</div>
+            </div>
+          </div>
+          <div class="plan-features">
+            <ul>
+              <li>Unlimited generations</li>
+              <li>All tones</li>
+              <li>Reply history</li>
+              <li>Priority support</li>
+            </ul>
+          </div>
+          <button class="pay-btn" id="payMonthly" data-plan="monthly">
+            Pay with Crypto
+          </button>
+        </div>
+
+        <div class="plan-card featured" id="planYearly">
+          <div class="plan-header">
+            <div>
+              <div class="plan-name">Yearly Pro</div>
+              <div class="plan-badge">Best Value</div>
+            </div>
+          </div>
+          <div class="plan-price">$99.00</div>
+          <div class="plan-period">per year (save ~17%)</div>
+          <div class="plan-features">
+            <ul>
+              <li>Unlimited generations</li>
+              <li>All tones</li>
+              <li>Reply history</li>
+              <li>Priority support</li>
+            </ul>
+          </div>
+          <button class="pay-btn" id="payYearly" data-plan="yearly">
+            Pay with Crypto
+          </button>
+        </div>
+
+        <div class="plan-card" id="planLifetime">
+          <div class="plan-header">
+            <div>
+              <div class="plan-name">Lifetime Pro</div>
+              <div class="plan-price">$199.00</div>
+              <div class="plan-period">one-time payment</div>
+            </div>
+          </div>
+          <div class="plan-features">
+            <ul>
+              <li>Unlimited generations</li>
+              <li>All tones</li>
+              <li>Reply history</li>
+              <li>Priority support</li>
+              <li>Forever access</li>
+            </ul>
+          </div>
+          <button class="pay-btn" id="payLifetime" data-plan="lifetime">
+            Pay with Crypto
+          </button>
+        </div>
+      </div>
+
+      <!-- Manual Activation (for MVP) -->
+      <div id="activationSection" style="display: none; margin-top: 20px; padding: 16px; background: #f0f9ff; border-radius: 8px; border: 1px solid #bae6fd;">
+        <p style="font-size: 12px; color: #0369a1; margin-bottom: 12px; text-align: center;">
+          After completing payment, click below to activate your Pro access:
+        </p>
+        <button class="activate-btn" id="activateProBtn">
+          I've Paid – Activate Pro
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
+
