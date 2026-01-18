@@ -2,7 +2,7 @@
 // Backend API URL - Update this to your deployed backend server URL
 // For local development: http://localhost:3000
 // For production: https://your-backend-domain.com
-const BACKEND_API_URL = "http://localhost:3000"; // TODO: Update to your production backend URL
+const BACKEND_API_URL = "https://linkdinereplyai.onrender.com";
 
 const NOWPAYMENTS_API_KEY = "YOUR_NOWPAYMENTS_API_KEY_HERE"; // TODO: Update with your NOWPayments API key
 const NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice";
