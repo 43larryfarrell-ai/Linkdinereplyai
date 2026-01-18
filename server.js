@@ -47,12 +47,24 @@ const GEMINI_MODEL_OPTIONS = [
 function getNextApiKey() {
   let attempts = 0;
   while (attempts < GEMINI_API_KEYS.length) {
-    const key = GEMINI_API_KEYS[currentKeyIndex];
-    if (!rateLimitedKeys.has(key)) return key;
-    currentKeyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+    // Skip first key (index 0) as it has issues
+    const keyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+    if (keyIndex === 0) {
+      currentKeyIndex = 1; // Skip to index 1
+      attempts++;
+      continue;
+    }
+    const key = GEMINI_API_KEYS[keyIndex];
+    if (!rateLimitedKeys.has(key)) {
+      currentKeyIndex = keyIndex;
+      return key;
+    }
+    currentKeyIndex = (keyIndex + 1) % GEMINI_API_KEYS.length;
     attempts++;
   }
-  return GEMINI_API_KEYS[0];
+  // Fallback to first working key (index 1)
+  currentKeyIndex = 1;
+  return GEMINI_API_KEYS[1];
 }
 
 // Initialize Flutterwave
