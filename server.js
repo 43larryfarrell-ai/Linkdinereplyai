@@ -24,7 +24,9 @@ const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ? 
   process.env.GEMINI_API_KEYS.split(',').map(key => {
     // Handle format like "gemini_key_1AIzaSyD..." by removing prefix
-    const cleanKey = key.replace(/^gemini_key_\d+/, '').trim();
+    let cleanKey = key.trim();
+    // Remove "gemini_key_" followed by numbers
+    cleanKey = cleanKey.replace(/^gemini_key_\d+/, '');
     return cleanKey;
   }).filter(key => key.length > 0) : [];
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
@@ -66,6 +68,9 @@ if (!GEMINI_API_KEYS || GEMINI_API_KEYS.length === 0) {
 
 console.log(`Loaded ${GEMINI_API_KEYS.length} Gemini API keys`);
 console.log('First key preview:', GEMINI_API_KEYS[0] ? GEMINI_API_KEYS[0].substring(0, 10) + '...' : 'None');
+console.log('First key length:', GEMINI_API_KEYS[0] ? GEMINI_API_KEYS[0].length : 0);
+console.log('Raw GEMINI_API_KEYS:', process.env.GEMINI_API_KEYS);
+console.log('Processed keys:', GEMINI_API_KEYS.map((key, i) => `${i + 1}: ${key.substring(0, 15)}... (${key.length} chars)`));
 
 if (!FLUTTERWAVE_SECRET_KEY) {
   console.error('ERROR: FLUTTERWAVE_SECRET_KEY environment variable is required!');
