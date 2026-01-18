@@ -23,21 +23,10 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ? 
   process.env.GEMINI_API_KEYS.split(',').map((key, index) => {
-    if (index === 0) {
-      console.log(`Key 1 - Raw: "${key}" (length: ${key.length})`);
-      let cleanKey = key.trim();
-      console.log(`Key 1 - After trim: "${cleanKey}" (length: ${cleanKey.length})`);
-      cleanKey = cleanKey.replace(/[\s\n\r\t\v\f\x00-\x1F\x7F-\x9F]/g, '');
-      console.log(`Key 1 - After whitespace removal: "${cleanKey}" (length: ${cleanKey.length})`);
-      cleanKey = cleanKey.replace(/^gemini_api_key_\d+/, '');
-      cleanKey = cleanKey.replace(/^gemini_key_\d+/, '');
-      console.log(`Key 1 - Final: "${cleanKey}" (length: ${cleanKey.length})`);
-    } else {
-      let cleanKey = key.trim();
-      cleanKey = cleanKey.replace(/[\s\n\r\t\v\f\x00-\x1F\x7F-\x9F]/g, '');
-      cleanKey = cleanKey.replace(/^gemini_api_key_\d+/, '');
-      cleanKey = cleanKey.replace(/^gemini_key_\d+/, '');
-    }
+    let cleanKey = key.trim();
+    cleanKey = cleanKey.replace(/[\s\n\r\t\v\f\x00-\x1F\x7F-\x9F]/g, '');
+    cleanKey = cleanKey.replace(/^gemini_api_key_\d+/, '');
+    cleanKey = cleanKey.replace(/^gemini_key_\d+/, '');
     return cleanKey;
   }).filter(key => key.length > 0) : [];
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
