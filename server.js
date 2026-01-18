@@ -33,8 +33,10 @@ const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ?
     cleanKey = cleanKey.replace(/[\s\n\r\t\v\f\x00-\x1F\x7F-\x9F]/g, '');
     console.log(`After whitespace removal: "${cleanKey}" (length: ${cleanKey.length})`);
     
-    // Remove "gemini_api_key_" followed by any numbers ONLY
+    // Remove "gemini_api_key_" followed by any numbers
     cleanKey = cleanKey.replace(/^gemini_api_key_\d+/, '');
+    // Remove "gemini_key_" followed by any numbers  
+    cleanKey = cleanKey.replace(/^gemini_key_\d+/, '');
     console.log(`After prefix removal: "${cleanKey}" (length: ${cleanKey.length})`);
     
     return cleanKey;
