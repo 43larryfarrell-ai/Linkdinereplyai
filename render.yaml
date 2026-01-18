@@ -1,0 +1,14 @@
+services:
+  # Backend API Service
+  - type: web
+    name: linkedin-reply-ai-backend
+    env: node
+    plan: free
+    buildCommand: "cd backend && npm install"
+    startCommand: "cd backend && node server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /
