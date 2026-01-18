@@ -21,7 +21,12 @@ const Flutterwave = require('flutterwave-node-v3');
 const app = express();
 // Render uses PORT environment variable, defaults to 3000 for local dev
 const PORT = process.env.PORT || 3000;
-const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ? process.env.GEMINI_API_KEYS.split(',').map(key => key.trim()) : [];
+const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ? 
+  process.env.GEMINI_API_KEYS.split(',').map(key => {
+    // Handle format like "gemini_key_1AIzaSyD..." by removing prefix
+    const cleanKey = key.replace(/^gemini_key_\d+/, '').trim();
+    return cleanKey;
+  }).filter(key => key.length > 0) : [];
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 const FLUTTERWAVE_PUBLIC_KEY = process.env.FLUTTERWAVE_PUBLIC_KEY;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -55,8 +60,12 @@ const flw = new Flutterwave(FLUTTERWAVE_PUBLIC_KEY, FLUTTERWAVE_SECRET_KEY);
 if (!GEMINI_API_KEYS || GEMINI_API_KEYS.length === 0) {
   console.error('ERROR: GEMINI_API_KEYS environment variable is required!');
   console.error('Please create a .env file with GEMINI_API_KEYS=key1,key2,key3');
+  console.error('Raw GEMINI_API_KEYS value:', process.env.GEMINI_API_KEYS);
   process.exit(1);
 }
+
+console.log(`Loaded ${GEMINI_API_KEYS.length} Gemini API keys`);
+console.log('First key preview:', GEMINI_API_KEYS[0] ? GEMINI_API_KEYS[0].substring(0, 10) + '...' : 'None');
 
 if (!FLUTTERWAVE_SECRET_KEY) {
   console.error('ERROR: FLUTTERWAVE_SECRET_KEY environment variable is required!');
