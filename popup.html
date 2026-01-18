@@ -433,6 +433,36 @@
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
     }
+
+    /* Payment Buttons Container */
+    .payment-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    /* Flutterwave Button Styles */
+    .flutterwave-btn {
+      background: #f5a623;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .flutterwave-btn:hover {
+      background: #d68910;
+    }
+
+    .flutterwave-btn.loading {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
@@ -470,7 +500,9 @@
         <h2>Unlock Unlimited AI Replies</h2>
         <p>You've reached your free trial limit. Upgrade to Pro for unlimited AI replies anytime.</p>
         <div style="margin-top: 12px; padding: 10px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; font-size: 11px; color: #0369a1; line-height: 1.4;">
-          💳 <strong>Pay with any crypto</strong> (BTC, USDT, etc.) — <strong>USDT-Tron recommended</strong> for low fees and smaller amounts
+          💳 <strong>Multiple Payment Options:</strong><br>
+          • <strong>Crypto</strong> (BTC, USDT, etc.) - USDT-Tron recommended for low fees<br>
+          • <strong>Card/Mobile Money</strong> - Visa, Mastercard, Mobile Money, Bank Transfer
         </div>
       </div>
 
@@ -491,9 +523,14 @@
               <li>Priority support</li>
             </ul>
           </div>
-          <button class="pay-btn" id="payMonthly" data-plan="monthly">
-            Pay with Crypto
-          </button>
+          <div class="payment-buttons">
+            <button class="pay-btn" id="payMonthly" data-plan="monthly">
+              Pay with Crypto
+            </button>
+            <button class="pay-btn flutterwave-btn" id="flutterwavePayMonthly" data-plan="monthly">
+              Pay with Card
+            </button>
+          </div>
         </div>
 
         <div class="plan-card featured" id="planYearly">
@@ -513,9 +550,14 @@
               <li>Priority support</li>
             </ul>
           </div>
-          <button class="pay-btn" id="payYearly" data-plan="yearly">
-            Pay with Crypto
-          </button>
+          <div class="payment-buttons">
+            <button class="pay-btn" id="payYearly" data-plan="yearly">
+              Pay with Crypto
+            </button>
+            <button class="pay-btn flutterwave-btn" id="flutterwavePayYearly" data-plan="yearly">
+              Pay with Card
+            </button>
+          </div>
         </div>
 
         <div class="plan-card" id="planLifetime">
@@ -535,9 +577,14 @@
               <li>Forever access</li>
             </ul>
           </div>
-          <button class="pay-btn" id="payLifetime" data-plan="lifetime">
-            Pay with Crypto
-          </button>
+          <div class="payment-buttons">
+            <button class="pay-btn" id="payLifetime" data-plan="lifetime">
+              Pay with Crypto
+            </button>
+            <button class="pay-btn flutterwave-btn" id="flutterwavePayLifetime" data-plan="lifetime">
+              Pay with Card
+            </button>
+          </div>
         </div>
       </div>
 

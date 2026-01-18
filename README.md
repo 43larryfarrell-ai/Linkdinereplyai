@@ -60,7 +60,10 @@ LinkedInReplyAI/
 - **Rate Limiting**: Prevents abuse and cost overruns
 - **Freemium Model**: 3 free uses, then 24-hour cooldown
 - **Pro Upgrade**: Monthly ($10), Yearly ($99), Lifetime ($199) plans
-- **Crypto Payments**: NOWPayments integration for Pro upgrades
+- **Multiple Payment Options**: 
+  - Crypto payments via NOWPayments (BTC, USDT, etc.)
+  - Card/Mobile Money via Flutterwave (Visa, Mastercard, Mobile Money, Bank Transfer)
+- **Global Payment Support**: Accept payments from 150+ countries
 - **Clean UI**: Modern, professional popup interface
 - **Easy Copy**: One-click copy for each generated reply
 
@@ -113,6 +116,7 @@ After deploying backend:
 ## 📖 Documentation
 
 - [Backend Setup Guide](backend/SETUP.md) - Step-by-step backend setup
+- [Flutterwave Setup Guide](backend/FLUTTERWAVE_SETUP.md) - Flutterwave payment integration
 - [Deployment Guide](backend/DEPLOYMENT.md) - Deploy to production
 - [Security Guide](SECURITY.md) - Security implementation details
 - [Backend README](backend/README.md) - Backend API documentation

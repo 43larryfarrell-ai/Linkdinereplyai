@@ -4,9 +4,14 @@
 // For production: https://your-backend-domain.com
 const BACKEND_API_URL = "http://localhost:3000"; // TODO: Update to your production backend URL
 
-const NOWPAYMENTS_API_KEY = "0ZTX41M-WJ5M083-HRC29PA-FRY69MH";
+const NOWPAYMENTS_API_KEY = "YOUR_NOWPAYMENTS_API_KEY_HERE"; // TODO: Update with your NOWPayments API key
 const NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice";
 const NOWPAYMENTS_MIN_AMOUNT_URL = "https://api.nowpayments.io/v1/min-amount";
+
+// Flutterwave Configuration
+const FLUTTERWAVE_PUBLIC_KEY = "FLWPUBK_TEST-YOUR_PUBLIC_KEY_HERE"; // TODO: Update with your Flutterwave public key
+const FLUTTERWAVE_SECRET_KEY = "FLWSECK_TEST-YOUR_SECRET_KEY_HERE"; // TODO: Update with your Flutterwave secret key (backend only)
+const FLUTTERWAVE_API_URL = "https://api.flutterwave.com/v3";
 
 // Note: Model selection and API key are now handled by the backend server
 const FREE_USES_LIMIT = 3;
@@ -512,6 +517,81 @@ async function createInvoice(planType) {
   }
 }
 
+// Create Flutterwave payment
+async function createFlutterwavePayment(planType) {
+  const plan = PLAN_CONFIGS[planType];
+  if (!plan) {
+    throw new Error('Invalid plan type');
+  }
+
+  try {
+    const response = await fetch(`${BACKEND_API_URL}/api/flutterwave/create-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        amount: plan.price,
+        currency: 'USD',
+        email: 'user@example.com', // TODO: Get user email from extension storage
+        tx_ref: `pro-upgrade-${planType}-${Date.now()}`,
+        plan_type: planType,
+        description: plan.description
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Flutterwave API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.data.link; // Flutterwave payment link
+  } catch (error) {
+    console.error('Error creating Flutterwave payment:', error);
+    throw error;
+  }
+}
+
+// Handle pricing plan selection with Flutterwave
+async function handleFlutterwavePlanSelection(planType) {
+  const payBtn = document.getElementById(`flutterwavePay${planType.charAt(0).toUpperCase() + planType.slice(1)}`);
+  if (!payBtn) return;
+
+  // Disable button and show loading
+  payBtn.disabled = true;
+  payBtn.classList.add('loading');
+  const originalText = payBtn.innerHTML;
+  payBtn.innerHTML = '<span class="payment-loading"></span> Redirecting to payment...';
+
+  try {
+    const paymentUrl = await createFlutterwavePayment(planType);
+    
+    // Open payment in new tab
+    window.open(paymentUrl, '_blank');
+    
+    // Show activation section
+    if (activationSection) {
+      activationSection.style.display = 'block';
+      // Store plan type for activation
+      await setStorageData({ pendingPlanType: planType });
+    }
+    
+    // Reset button
+    payBtn.disabled = false;
+    payBtn.classList.remove('loading');
+    payBtn.innerHTML = originalText;
+  } catch (error) {
+    console.error('Flutterwave payment setup failed:', error);
+    showError('Payment setup failed. Please try again later.');
+    
+    // Reset button
+    payBtn.disabled = false;
+    payBtn.classList.remove('loading');
+    payBtn.innerHTML = originalText;
+  }
+}
+
 // Handle pricing plan selection with NOWPayments
 async function handlePlanSelection(planType) {
   const payBtn = document.getElementById(`pay${planType.charAt(0).toUpperCase() + planType.slice(1)}`);
@@ -604,7 +684,7 @@ function initializeEventListeners() {
   // Generate button
   generateBtn.addEventListener('click', handleGenerate);
   
-  // Pricing plan payment buttons
+  // Pricing plan payment buttons (NOWPayments - Crypto)
   const payMonthlyBtn = document.getElementById('payMonthly');
   const payYearlyBtn = document.getElementById('payYearly');
   const payLifetimeBtn = document.getElementById('payLifetime');
@@ -625,6 +705,30 @@ function initializeEventListeners() {
     payLifetimeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       handlePlanSelection('lifetime');
+    });
+  }
+  
+  // Pricing plan payment buttons (Flutterwave - Card/Mobile Money)
+  const flutterwavePayMonthlyBtn = document.getElementById('flutterwavePayMonthly');
+  const flutterwavePayYearlyBtn = document.getElementById('flutterwavePayYearly');
+  const flutterwavePayLifetimeBtn = document.getElementById('flutterwavePayLifetime');
+  
+  if (flutterwavePayMonthlyBtn) {
+    flutterwavePayMonthlyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleFlutterwavePlanSelection('monthly');
+    });
+  }
+  if (flutterwavePayYearlyBtn) {
+    flutterwavePayYearlyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleFlutterwavePlanSelection('yearly');
+    });
+  }
+  if (flutterwavePayLifetimeBtn) {
+    flutterwavePayLifetimeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      handleFlutterwavePlanSelection('lifetime');
     });
   }
   
