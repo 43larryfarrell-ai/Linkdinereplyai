@@ -248,43 +248,87 @@ function extractText() {
   return text.length > 1500 ? text.substring(0, 1500) : text;
 }
 
-// Call backend API to generate replies (secure - API key is on server)
-async function generateReplies(pageText) {
-  try {
-    const response = await fetch(`${BACKEND_API_URL}/api/generate-reply`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        pageText: pageText
-      })
-    });
+// Call backend API to generate replies with retry logic
+async function generateReplies(pageText, maxRetries = 3) {
+  let lastError = null;
+  const loadingEl = document.getElementById('loading');
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`API attempt ${attempt} of ${maxRetries}`);
+      
+      // Update loading text to show retry progress
+      if (attempt > 1) {
+        loadingEl.textContent = `Retrying... (${attempt}/${maxRetries})`;
+      }
+      
+      const response = await fetch(`${BACKEND_API_URL}/api/generate-reply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          pageText: pageText
+        })
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      const errorMessage = errorData.message || errorData.error || `API error: ${response.status}`;
-      throw new Error(errorMessage);
-    }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.error || `API error: ${response.status}`;
+        
+        // Check if it's a rate limit or server error that might be resolved with retry
+        if (response.status === 429 || response.status === 500 || response.status === 502 || response.status === 503) {
+          lastError = new Error(errorMessage);
+          if (attempt < maxRetries) {
+            const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
+            console.log(`API rate limited or server error, retrying in ${delay}ms...`);
+            loadingEl.textContent = `Service busy, retrying in ${Math.ceil(delay/1000)}s...`;
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+        }
+        
+        throw new Error(errorMessage);
+      }
 
-    const data = await response.json();
-    
-    if (!data.success || !data.text) {
-      throw new Error('Invalid API response format');
-    }
+      const data = await response.json();
+      
+      if (!data.success || !data.text) {
+        throw new Error('Invalid API response format');
+      }
 
-    // Return the generated text
-    console.log(`Successfully generated replies using model: ${data.model || 'unknown'}`);
-    return data.text;
-  } catch (error) {
-    console.error('Error calling backend API:', error);
-    
-    // Provide user-friendly error messages
-    if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-      throw new Error('Unable to connect to server. Please check your internet connection and ensure the backend server is running.');
+      // Success! Return the generated text
+      console.log(`Successfully generated replies using model: ${data.model || 'unknown'} on attempt ${attempt}`);
+      if (data.apiKey) {
+        console.log(`API key used: ${data.apiKey}`);
+      }
+      return data.text;
+      
+    } catch (error) {
+      console.error(`API attempt ${attempt} failed:`, error.message);
+      lastError = error;
+      
+      // If it's a network error and we have retries left, try again
+      if ((error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) && attempt < maxRetries) {
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 3000);
+        console.log(`Network error, retrying in ${delay}ms...`);
+        loadingEl.textContent = `Connection issue, retrying in ${Math.ceil(delay/1000)}s...`;
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
     }
-    
-    throw error;
+  }
+  
+  // All retries failed, provide user-friendly error
+  console.error(`All ${maxRetries} API attempts failed. Last error:`, lastError?.message);
+  
+  // Don't expose technical details to user
+  if (lastError?.message.includes('rate limit') || lastError?.message.includes('quota')) {
+    throw new Error('Service is temporarily busy. Please try again in a moment.');
+  } else if (lastError?.message.includes('Unable to connect')) {
+    throw new Error('Unable to connect to AI service. Please check your internet connection.');
+  } else {
+    throw new Error('AI service is temporarily unavailable. Please try again later.');
   }
 }
 
@@ -393,6 +437,10 @@ async function handleGenerate() {
   repliesContainer.classList.remove('show');
   loadingEl.classList.add('show');
   generateBtn.disabled = true;
+  
+  // Store original loading text
+  const originalLoadingText = loadingEl.textContent;
+  let retryCount = 0;
 
   try {
     // Extract page text
@@ -402,7 +450,10 @@ async function handleGenerate() {
       throw new Error('Could not extract enough text from the page. Please make sure you are on a LinkedIn post page.');
     }
 
-    // Generate replies
+    // Update loading text to show we're generating
+    loadingEl.textContent = 'Generating AI replies...';
+
+    // Generate replies with retry logic
     const responseText = await generateReplies(pageText);
     const replies = parseReplies(responseText);
     
