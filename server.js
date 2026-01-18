@@ -182,6 +182,8 @@ async function generateRepliesWithGemini(pageText) {
     const apiUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent?key=${apiKey}`;
     triedModels.push(model);
 
+    console.log(`Trying model: ${model} with key: ${apiKey.substring(0, 15)}... (length: ${apiKey.length})`);
+
     try {
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -191,9 +193,18 @@ async function generateRepliesWithGemini(pageText) {
         body: JSON.stringify(requestBody)
       });
 
+      console.log(`API Response Status: ${response.status} for model: ${model}`);
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error?.message || `API error: ${response.status}`;
+
+        console.log(`API Error Details:`, {
+          model,
+          status: response.status,
+          message: errorMessage,
+          apiKey: apiKey.substring(0, 10) + '...'
+        });
 
         // Check if it's a rate limit error
         if (errorMessage.includes('quota') || errorMessage.includes('rate limit') || response.status === 429) {
@@ -220,18 +231,19 @@ async function generateRepliesWithGemini(pageText) {
       if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || 
           !data.candidates[0].content.parts || !data.candidates[0].content.parts[0]) {
         lastError = new Error('Invalid API response format');
+        console.log(`Invalid Response Format:`, data);
         continue;
       }
 
       // Success! Return the result
-      console.log(`Successfully used model: ${model} with key ending in ...${apiKey.substring(apiKey.length - 6)}`);
+      console.log(`✅ SUCCESS! Used model: ${model} with key ending in ...${apiKey.substring(apiKey.length - 6)}`);
       return {
         text: data.candidates[0].content.parts[0].text,
         model: model,
         apiKey: apiKey.substring(0, 10) + '...'
       };
     } catch (error) {
-      console.error(`Error with model ${model} and key ${apiKey.substring(0, 10)}...:`, error.message);
+      console.error(`❌ ERROR with model ${model} and key ${apiKey.substring(0, 10)}...:`, error.message);
       lastError = error;
       continue;
     }
@@ -240,6 +252,7 @@ async function generateRepliesWithGemini(pageText) {
   // If we get here, all models and keys failed
   const errorMsg = `Unable to connect to Gemini API. Tried models: ${triedModels.join(', ')}. Tried keys: ${triedKeys.join(', ')}. ` +
     `Error: ${lastError?.message || 'Unknown error'}`;
+  console.error(`❌ ALL MODELS AND KEYS FAILED:`, errorMsg);
   throw new Error(errorMsg);
 }
 
