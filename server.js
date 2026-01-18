@@ -25,6 +25,8 @@ const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ?
   process.env.GEMINI_API_KEYS.split(',').map(key => {
     // Handle format like "gemini_key_1AIzaSyD..." by removing prefix
     let cleanKey = key.trim();
+    // Remove any newline characters and whitespace
+    cleanKey = cleanKey.replace(/[\n\r]/g, '');
     // Remove "gemini_key_" followed by any numbers
     cleanKey = cleanKey.replace(/^gemini_key_\d+/, '');
     return cleanKey;
