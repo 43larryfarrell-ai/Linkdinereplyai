@@ -40,9 +40,9 @@ let currentKeyIndex = 0;
 const rateLimitedKeys = new Set();
 const GEMINI_API_VERSION = 'v1beta';
 const GEMINI_MODEL_OPTIONS = [
-  'gemini-2.5-flash-exp',
-  'gemini-2.0-flash-exp',
-  'gemini-1.5-flash'
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
+  'gemini-pro'
 ];
 
 // Function to get next available API key
