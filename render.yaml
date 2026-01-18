@@ -6,7 +6,6 @@ services:
   - type: web
     name: linkedin-reply-ai-backend
     env: node
-    rootDir: src
     buildCommand: npm install
     startCommand: node server.js
     healthCheckPath: /health
