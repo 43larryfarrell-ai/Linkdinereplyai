@@ -29,6 +29,8 @@ const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ?
     cleanKey = cleanKey.replace(/[\s\n\r\t\v\f\x00-\x1F\x7F-\x9F]/g, '');
     // Remove "gemini_key_" followed by any numbers
     cleanKey = cleanKey.replace(/^gemini_key_\d+/, '');
+    // Remove any remaining underscores that might be in the middle
+    cleanKey = cleanKey.replace(/_/g, '');
     return cleanKey;
   }).filter(key => key.length > 0) : [];
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
