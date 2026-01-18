@@ -93,6 +93,12 @@ app.use(helmet({
 }));
 
 // CORS configuration
+const allowedOrigins = [
+  'https://linkdinereplyai.onrender.com',
+  'http://localhost:3000',
+  'http://localhost:10000'
+];
+
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
@@ -102,13 +108,6 @@ const corsOptions = {
     if (origin.startsWith('chrome-extension://')) {
       return callback(null, true);
     }
-    
-    // Allow specific domains
-    const allowedOrigins = [
-      'https://linkdinereplyai.onrender.com',
-      'http://localhost:3000',
-      'http://localhost:10000'
-    ];
     
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
