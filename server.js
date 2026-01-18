@@ -23,12 +23,12 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ? 
   process.env.GEMINI_API_KEYS.split(',').map(key => {
-    // Handle format like "gemini_key_1AIzaSyD..." by removing prefix
+    // Handle format like "gemini_api_key_1AIzaSyD..." by removing prefix
     let cleanKey = key.trim();
     // Remove ALL whitespace, control characters, and newlines
     cleanKey = cleanKey.replace(/[\s\n\r\t\v\f\x00-\x1F\x7F-\x9F]/g, '');
-    // Remove "gemini_key_" followed by any numbers ONLY
-    cleanKey = cleanKey.replace(/^gemini_key_\d+/, '');
+    // Remove "gemini_api_key_" followed by any numbers ONLY
+    cleanKey = cleanKey.replace(/^gemini_api_key_\d+/, '');
     return cleanKey;
   }).filter(key => key.length > 0) : [];
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
