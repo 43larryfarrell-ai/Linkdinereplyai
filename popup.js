@@ -248,19 +248,13 @@ function extractText() {
   return text.length > 1500 ? text.substring(0, 1500) : text;
 }
 
-// Call backend API to generate replies with retry logic
+// Call backend API to generate replies with silent retry logic
 async function generateReplies(pageText, maxRetries = 3) {
   let lastError = null;
-  const loadingEl = document.getElementById('loading');
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`API attempt ${attempt} of ${maxRetries}`);
-      
-      // Update loading text to show retry progress
-      if (attempt > 1) {
-        loadingEl.textContent = `Retrying... (${attempt}/${maxRetries})`;
-      }
       
       const response = await fetch(`${BACKEND_API_URL}/api/generate-reply`, {
         method: 'POST',
@@ -282,7 +276,6 @@ async function generateReplies(pageText, maxRetries = 3) {
           if (attempt < maxRetries) {
             const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000); // Exponential backoff, max 5s
             console.log(`API rate limited or server error, retrying in ${delay}ms...`);
-            loadingEl.textContent = `Service busy, retrying in ${Math.ceil(delay/1000)}s...`;
             await new Promise(resolve => setTimeout(resolve, delay));
             continue;
           }
@@ -312,7 +305,6 @@ async function generateReplies(pageText, maxRetries = 3) {
       if ((error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) && attempt < maxRetries) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 3000);
         console.log(`Network error, retrying in ${delay}ms...`);
-        loadingEl.textContent = `Connection issue, retrying in ${Math.ceil(delay/1000)}s...`;
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
