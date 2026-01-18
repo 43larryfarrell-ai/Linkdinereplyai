@@ -21,7 +21,7 @@ const Flutterwave = require('flutterwave-node-v3');
 const app = express();
 // Render uses PORT environment variable, defaults to 3000 for local dev
 const PORT = process.env.PORT || 3000;
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ? process.env.GEMINI_API_KEYS.split(',').map(key => key.trim()) : [];
 const FLUTTERWAVE_SECRET_KEY = process.env.FLUTTERWAVE_SECRET_KEY;
 const FLUTTERWAVE_PUBLIC_KEY = process.env.FLUTTERWAVE_PUBLIC_KEY;
 const NODE_ENV = process.env.NODE_ENV || 'development';
@@ -30,11 +30,15 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 const flw = new Flutterwave(FLUTTERWAVE_PUBLIC_KEY, FLUTTERWAVE_SECRET_KEY);
 
 // Validate required environment variables
-if (!GEMINI_API_KEY) {
-  console.error('ERROR: GEMINI_API_KEY environment variable is required!');
-  console.error('Please create a .env file with GEMINI_API_KEY=your_key');
+if (!GEMINI_API_KEYS || GEMINI_API_KEYS.length === 0) {
+  console.error('ERROR: GEMINI_API_KEYS environment variable is required!');
+  console.error('Please create a .env file with GEMINI_API_KEYS=your_key1,your_key2,...');
   process.exit(1);
 }
+
+// API Key rotation state
+let currentKeyIndex = 0;
+const rateLimitedKeys = new Set();
 
 if (!FLUTTERWAVE_SECRET_KEY) {
   console.error('ERROR: FLUTTERWAVE_SECRET_KEY environment variable is required!');
@@ -120,7 +124,25 @@ const GEMINI_MODEL_OPTIONS = [
 ];
 
 /**
- * Generate replies using Gemini API with model fallback
+ * Get next available API key with rotation
+ */
+function getNextApiKey() {
+  // Find first non-rate-limited key
+  let attempts = 0;
+  while (attempts < GEMINI_API_KEYS.length) {
+    const key = GEMINI_API_KEYS[currentKeyIndex];
+    if (!rateLimitedKeys.has(key)) {
+      return key;
+    }
+    currentKeyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+    attempts++;
+  }
+  // All keys are rate limited, return the first one and let it fail
+  return GEMINI_API_KEYS[0];
+}
+
+/**
+ * Generate replies using Gemini API with model and key fallback
  */
 async function generateRepliesWithGemini(pageText) {
   const prompt = `Generate 3 short, polite, professional LinkedIn reply suggestions (1-3 sentences each) for this post content: ${pageText}. Make them engaging and relevant. Format each reply on a new line, numbered 1, 2, 3.`;
@@ -135,10 +157,13 @@ async function generateRepliesWithGemini(pageText) {
 
   let lastError = null;
   const triedModels = [];
+  const triedKeys = [];
 
   // Try each model option until one works
   for (const model of GEMINI_MODEL_OPTIONS) {
-    const apiUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    const apiKey = getNextApiKey();
+    triedKeys.push(apiKey.substring(0, 10) + '...');
+    const apiUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent?key=${apiKey}`;
     triedModels.push(model);
 
     try {
@@ -153,6 +178,15 @@ async function generateRepliesWithGemini(pageText) {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         const errorMessage = errorData.error?.message || `API error: ${response.status}`;
+
+        // Check if it's a rate limit error
+        if (errorMessage.includes('quota') || errorMessage.includes('rate limit') || response.status === 429) {
+          rateLimitedKeys.add(apiKey);
+          currentKeyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+          console.warn(`API key rate limited, switching to next key. Model ${model} failed.`);
+          lastError = new Error(`Rate limit hit for key ending in ...${apiKey.substring(apiKey.length - 6)}`);
+          continue;
+        }
 
         // Check if it's a model not found error
         if (errorMessage.includes('not found') || errorMessage.includes('not supported')) {
@@ -174,20 +208,21 @@ async function generateRepliesWithGemini(pageText) {
       }
 
       // Success! Return the result
-      console.log(`Successfully used model: ${model}`);
+      console.log(`Successfully used model: ${model} with key ending in ...${apiKey.substring(apiKey.length - 6)}`);
       return {
         text: data.candidates[0].content.parts[0].text,
-        model: model
+        model: model,
+        apiKey: apiKey.substring(0, 10) + '...'
       };
     } catch (error) {
-      console.error(`Error with model ${model}:`, error.message);
+      console.error(`Error with model ${model} and key ${apiKey.substring(0, 10)}...:`, error.message);
       lastError = error;
       continue;
     }
   }
 
-  // If we get here, all models failed
-  const errorMsg = `Unable to connect to Gemini API. Tried models: ${triedModels.join(', ')}. ` +
+  // If we get here, all models and keys failed
+  const errorMsg = `Unable to connect to Gemini API. Tried models: ${triedModels.join(', ')}. Tried keys: ${triedKeys.join(', ')}. ` +
     `Error: ${lastError?.message || 'Unknown error'}`;
   throw new Error(errorMsg);
 }
