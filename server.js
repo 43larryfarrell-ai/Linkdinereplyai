@@ -169,6 +169,37 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use('/api/', limiter);
 
+// NowPayments endpoint
+app.post('/api/nowpayments-create-invoice', async (req, res) => {
+  try {
+    const { price_amount, price_currency, order_description, order_id } = req.body;
+    
+    const invoiceData = {
+      price_amount: price_amount,
+      price_currency: price_currency,
+      order_description: order_description,
+      order_id: order_id,
+      // Allow user to choose any cryptocurrency
+      // pay_currency: "btc" // Uncomment to force specific crypto
+    };
+
+    const response = await fetch(`${process.env.NOWPAYMENTS_API_URL}/invoice`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.NOWPAYMENTS_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(invoiceData)
+    });
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('NowPayments invoice error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Payment endpoint
 app.post('/api/create-payment', async (req, res) => {
   try {

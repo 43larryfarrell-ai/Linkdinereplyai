@@ -4,7 +4,8 @@
 // For production: https://your-backend-domain.com
 const BACKEND_API_URL = "https://linkdinereplyai.onrender.com";
 
-const NOWPAYMENTS_API_KEY = "YOUR_NOWPAYMENTS_API_KEY_HERE"; // TODO: Update with your NOWPayments API key
+// NowPayments Configuration - TODO: Update with your actual API key
+const NOWPAYMENTS_API_KEY = "YOUR_NOWPAYMENTS_API_KEY_HERE"; 
 const NOWPAYMENTS_API_URL = "https://api.nowpayments.io/v1/invoice";
 const NOWPAYMENTS_MIN_AMOUNT_URL = "https://api.nowpayments.io/v1/min-amount";
 
@@ -556,13 +557,36 @@ async function handleGenerate() {
   }
 }
 
-// Create NOWPayments invoice
+// Create NOWPayments invoice via backend
 async function createInvoice(planType) {
   const plan = PLAN_CONFIGS[planType];
   if (!plan) {
     throw new Error('Invalid plan type');
   }
 
+  const requestBody = {
+    price_amount: plan.price,
+    price_currency: "usd",
+    order_description: plan.description,
+    order_id: `pro-upgrade-${planType}-${Date.now()}`
+  };
+
+  try {
+    const response = await fetch(`${BACKEND_API_URL}/api/nowpayments-create-invoice`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    const data = await response.json();
+    
+    if (!data.invoice_url) {
+      throw new Error('Invalid API response: missing invoice_url');
+    }
+
+    return data.invoice_url;
   // Request body without pay_currency to allow user to choose any supported crypto (BTC, USDT, etc.)
   const priceAmount = parseFloat(plan.price);
   const requestBody = {
