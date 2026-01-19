@@ -34,6 +34,82 @@ const PLAN_CONFIGS = {
   }
 };
 
+// Flutterwave Payment Functions
+async function initiateFlutterwavePayment(planType) {
+  try {
+    const plan = PLAN_CONFIGS[planType];
+    const email = prompt('Enter your email address for payment:');
+    
+    if (!email) {
+      alert('Email is required for payment');
+      return;
+    }
+
+    // Show loading state
+    const payBtn = document.getElementById(`flutterwavePay${planType.charAt(0).toUpperCase() + planType.slice(1)}`);
+    const originalText = payBtn.innerHTML;
+    payBtn.innerHTML = '<span class="payment-loading"></span> Processing...';
+    payBtn.disabled = true;
+
+    const response = await fetch(`${BACKEND_API_URL}/api/create-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email,
+        amount: parseFloat(plan.price) * 100, // Convert to cents
+        currency: 'USD'
+      })
+    });
+
+    const payment = await response.json();
+    
+    if (payment.status === 'success') {
+      // Redirect to Flutterwave payment page
+      window.open(payment.data.link, '_blank');
+      
+      // Show activation section
+      document.getElementById('activationSection').style.display = 'block';
+      
+      // Update button
+      payBtn.innerHTML = '✓ Payment Initiated';
+      payBtn.style.background = '#10b981';
+      
+      alert(`Payment initiated! Complete the payment in the new window, then click "I've Paid – Activate Pro" below.`);
+    } else {
+      throw new Error(payment.message || 'Payment initialization failed');
+    }
+  } catch (error) {
+    console.error('Flutterwave payment error:', error);
+    alert('Payment failed: ' + error.message);
+    
+    // Reset button
+    const payBtn = document.getElementById(`flutterwavePay${planType.charAt(0).toUpperCase() + planType.slice(1)}`);
+    payBtn.innerHTML = 'Pay with Card';
+    payBtn.disabled = false;
+  }
+}
+
+// Add event listeners for Flutterwave payment buttons
+document.addEventListener('DOMContentLoaded', function() {
+  // Flutterwave payment buttons
+  const flutterwavePayMonthly = document.getElementById('flutterwavePayMonthly');
+  const flutterwavePayYearly = document.getElementById('flutterwavePayYearly');
+  const flutterwavePayLifetime = document.getElementById('flutterwavePayLifetime');
+
+  if (flutterwavePayMonthly) {
+    flutterwavePayMonthly.addEventListener('click', () => initiateFlutterwavePayment('monthly'));
+  }
+  if (flutterwavePayYearly) {
+    flutterwavePayYearly.addEventListener('click', () => initiateFlutterwavePayment('yearly'));
+  }
+  if (flutterwavePayLifetime) {
+    flutterwavePayLifetime.addEventListener('click', () => initiateFlutterwavePayment('lifetime'));
+  }
+});
+
 // Fetch minimal supported amount for BTC vs USDT-TRC20 (used as a safeguard for small payments)
 async function fetchBtcMinAmount() {
   try {

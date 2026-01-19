@@ -169,6 +169,70 @@ const limiter = rateLimit({
 // Apply rate limiting to all routes
 app.use('/api/', limiter);
 
+// Payment endpoint
+app.post('/api/create-payment', async (req, res) => {
+  try {
+    const { email, amount, currency = 'USD' } = req.body;
+    
+    // Generate unique transaction reference
+    const tx_ref = 'TXN_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    
+    const paymentData = {
+      tx_ref: tx_ref,
+      amount: amount,
+      currency: currency,
+      email: email,
+      payment_options: 'card,banktransfer,ussd,mobilemoney,barter',
+      redirect_url: `${req.protocol}://${req.get('host')}/payment-success`,
+      customer: {
+        email: email,
+        name: 'LinkedIn Reply AI User'
+      },
+      customizations: {
+        title: 'LinkedIn Reply AI Premium',
+        description: 'Unlock unlimited AI replies',
+        logo: 'https://linkdinereplyai.onrender.com/icons/icon128.png'
+      }
+    };
+
+    const response = await flw.Charge.payment(paymentData);
+    res.json(response);
+  } catch (error) {
+    console.error('Flutterwave payment error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Payment success callback
+app.get('/payment-success', (req, res) => {
+  const { status, tx_ref, transaction_id } = req.query;
+  
+  if (status === 'successful') {
+    res.send(`
+      <html>
+        <head><title>Payment Successful</title></head>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+          <h1 style="color: #4CAF50;">✅ Payment Successful!</h1>
+          <p>Thank you for upgrading to LinkedIn Reply AI Premium.</p>
+          <p>Transaction ID: ${transaction_id}</p>
+          <p>You can now close this window and return to the extension.</p>
+        </body>
+      </html>
+    `);
+  } else {
+    res.send(`
+      <html>
+        <head><title>Payment Failed</title></head>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 50px;">
+          <h1 style="color: #f44336;">❌ Payment Failed</h1>
+          <p>Something went wrong with your payment.</p>
+          <p>Please try again or contact support.</p>
+        </body>
+      </html>
+    `);
+  }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ 
