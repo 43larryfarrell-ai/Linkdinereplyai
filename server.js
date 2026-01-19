@@ -21,6 +21,8 @@ const Flutterwave = require('flutterwave-node-v3');
 const app = express();
 // Render uses PORT environment variable, defaults to 3000 for local dev
 const PORT = process.env.PORT || 3000;
+// Trust proxy for proper rate limiting when behind reverse proxy (like Render)
+app.set('trust proxy', true);
 const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ? 
   process.env.GEMINI_API_KEYS.split(',').map((key, index) => {
     let cleanKey = key.trim();
@@ -38,8 +40,8 @@ let currentKeyIndex = 0;
 const rateLimitedKeys = new Set();
 const GEMINI_API_VERSION = 'v1beta';
 const GEMINI_MODEL_OPTIONS = [
-  'gemini-1.5-flash-001',
-  'gemini-1.5-pro-001',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro',
   'gemini-1.0-pro'
 ];
 
