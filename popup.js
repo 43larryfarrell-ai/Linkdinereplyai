@@ -474,20 +474,30 @@ function hideError() {
 
 // Main generate function
 async function handleGenerate() {
+  console.log('🔥 Generate button clicked!');
+  
   // Check backend URL is configured
   if (!BACKEND_API_URL || BACKEND_API_URL.includes('localhost') && BACKEND_API_URL.includes('TODO')) {
+    console.error('❌ Backend URL not configured');
     showError('Backend API URL not configured. Please update BACKEND_API_URL in popup.js');
     return;
   }
 
+  console.log('✅ Backend URL:', BACKEND_API_URL);
+
   const data = await getStorageData();
+  console.log('📊 Storage data:', data);
   
   // Pro users bypass all limits
   if (!data.isPro) {
+    console.log('🆓 Free user - checking limits');
+    
     // Check if we're in cooldown (shouldn't happen if UI is correct, but double-check)
     if (data.cooldownStartTime) {
       const timeSinceCooldown = Date.now() - data.cooldownStartTime;
+      console.log('⏰ Cooldown check:', timeSinceCooldown, 'ms vs', COOLDOWN_MS, 'ms');
       if (timeSinceCooldown < COOLDOWN_MS) {
+        console.log('❌ Still in cooldown');
         showPricingScreen();
         return;
       }
@@ -495,13 +505,18 @@ async function handleGenerate() {
 
     // Check if limit reached (shouldn't happen if UI is correct)
     const freeUsesCount = data.freeUsesCount || 0;
+    console.log('📈 Free uses count:', freeUsesCount, 'of', FREE_USES_LIMIT);
     if (freeUsesCount >= FREE_USES_LIMIT) {
+      console.log('❌ Limit reached');
       showPricingScreen();
       return;
     }
+  } else {
+    console.log('⭐ Pro user - no limits');
   }
 
   // Reset UI
+  console.log('🔄 Resetting UI');
   hideError();
   repliesContainer.classList.remove('show');
   loadingEl.classList.add('show');
@@ -512,15 +527,19 @@ async function handleGenerate() {
   let retryCount = 0;
 
   try {
+    console.log('📄 Extracting page text...');
     // Extract page text
     const pageText = await extractPageText();
+    console.log('📝 Page text length:', pageText?.length || 0);
     
     if (!pageText || pageText.length < 50) {
-      throw new Error('Could not extract enough text from the page. Please make sure you are on a LinkedIn post page.');
+      console.error('❌ Not enough text extracted');
+      throw new Error('Could not extract enough text from page. Please make sure you are on a LinkedIn post page.');
     }
 
     // Update loading text to show we're generating
     loadingEl.textContent = 'Generating AI replies...';
+    console.log('🤖 Calling API...');
 
     // Generate replies with retry logic
     const responseText = await generateReplies(pageText);
