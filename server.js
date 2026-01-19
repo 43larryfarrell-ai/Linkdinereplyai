@@ -22,7 +22,8 @@ const app = express();
 // Render uses PORT environment variable, defaults to 3000 for local dev
 const PORT = process.env.PORT || 3000;
 // Trust proxy for proper rate limiting when behind reverse proxy (like Render)
-app.set('trust proxy', true);
+// Only trust specific proxies to avoid security issues
+app.set('trust proxy', ['127.0.0.1', '10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16']);
 const GEMINI_API_KEYS = process.env.GEMINI_API_KEYS ? 
   process.env.GEMINI_API_KEYS.split(',').map((key, index) => {
     let cleanKey = key.trim();
@@ -40,9 +41,9 @@ let currentKeyIndex = 0;
 const rateLimitedKeys = new Set();
 const GEMINI_API_VERSION = 'v1beta';
 const GEMINI_MODEL_OPTIONS = [
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
-  'gemini-1.0-pro'
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-pro-latest',
+  'gemini-pro'
 ];
 
 // Function to get next available API key
