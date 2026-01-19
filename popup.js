@@ -507,7 +507,7 @@ async function handleGenerate() {
     const freeUsesCount = data.freeUsesCount || 0;
     console.log('📈 Free uses count:', freeUsesCount, 'of', FREE_USES_LIMIT);
     if (freeUsesCount >= FREE_USES_LIMIT) {
-      console.log('❌ Limit reached');
+      console.log('❌ Limit reached - showing pricing screen');
       showPricingScreen();
       return;
     }
