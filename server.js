@@ -434,10 +434,16 @@ app.post('/api/generate-reply',
       .escape() // Sanitize input
   ],
   async (req, res) => {
+    console.log('🔥 API called:', req.method, req.url);
+    console.log('📄 Request body:', req.body);
+    
     try {
       // Check validation errors
       const errors = validationResult(req);
+      console.log('✅ Validation errors:', errors.array());
+      
       if (!errors.isEmpty()) {
+        console.log('❌ Validation failed:', errors.array());
         return res.status(400).json({
           error: 'Validation failed',
           details: errors.array()
@@ -445,8 +451,10 @@ app.post('/api/generate-reply',
       }
 
       const { pageText } = req.body;
+      console.log('📝 Page text length:', pageText?.length || 0);
 
       // Generate replies using Gemini API
+      console.log('🤖 Calling Gemini API...');
       const result = await generateRepliesWithGemini(pageText);
 
       // Return success response
