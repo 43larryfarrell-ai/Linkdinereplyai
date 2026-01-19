@@ -41,33 +41,35 @@ let currentKeyIndex = 0;
 const rateLimitedKeys = new Set();
 const GEMINI_API_VERSION = 'v1';
 const GEMINI_MODEL_OPTIONS = [
-  'gemini-2.5-flash',
-  'gemini-2.5-pro',
-  'gemini-2.0-flash'
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro'
 ];
+
+// Debug: Check API keys and models
+console.log('🔑 Available API keys:', GEMINI_API_KEYS.length);
+console.log('🤖 Model options:', GEMINI_MODEL_OPTIONS);
+console.log('🌍 Environment:', NODE_ENV);
 
 // Function to get next available API key
 function getNextApiKey() {
   let attempts = 0;
   while (attempts < GEMINI_API_KEYS.length) {
-    // Skip first key (index 0) as it has issues
-    const keyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
-    if (keyIndex === 0) {
-      currentKeyIndex = 1; // Skip to index 1
-      attempts++;
-      continue;
+    const keyIndex = currentKeyIndex % GEMINI_API_KEYS.length;
+    currentKeyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+    
+    if (!rateLimitedKeys.has(GEMINI_API_KEYS[keyIndex])) {
+      console.log(`🔑 Using API key ${keyIndex + 1}/${GEMINI_API_KEYS.length}`);
+      return GEMINI_API_KEYS[keyIndex];
     }
-    const key = GEMINI_API_KEYS[keyIndex];
-    if (!rateLimitedKeys.has(key)) {
-      currentKeyIndex = keyIndex;
-      return key;
-    }
-    currentKeyIndex = (keyIndex + 1) % GEMINI_API_KEYS.length;
     attempts++;
   }
-  // Fallback to first working key (index 1)
-  currentKeyIndex = 1;
-  return GEMINI_API_KEYS[1];
+  
+  // If all keys are rate limited, reset and return first key
+  console.warn('⚠️ All API keys rate limited, resetting...');
+  rateLimitedKeys.clear();
+  currentKeyIndex = 0;
+  return GEMINI_API_KEYS[0];
 }
 
 // Initialize Flutterwave
