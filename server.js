@@ -41,9 +41,13 @@ let currentKeyIndex = 0;
 const rateLimitedKeys = new Set();
 const GEMINI_API_VERSION = 'v1';
 const GEMINI_MODEL_OPTIONS = [
+  'gemini-2.0-flash-exp',
   'gemini-2.0-flash',
+  'gemini-1.5-pro',
   'gemini-1.5-flash',
-  'gemini-1.5-pro'
+  'gemini-1.5-flash-8b',
+  'gemini-pro',
+  'gemini-pro-vision'
 ];
 
 // Debug: Check API keys and models
@@ -382,13 +386,22 @@ async function generateRepliesWithGemini(pageText) {
         }
 
         // Check if it's a model not found error
-        if (errorMessage.includes('not found') || errorMessage.includes('not supported')) {
+        if (errorMessage.includes('not found') || errorMessage.includes('not supported') || response.status === 404) {
           lastError = new Error(`Model "${model}" is not available. Trying fallback models...`);
           console.warn(`Model ${model} not found, trying next model...`);
           continue;
         }
 
-        lastError = new Error(errorMessage);
+        // Check if it's a permission error
+        if (errorMessage.includes('permission') || errorMessage.includes('access') || response.status === 403) {
+          lastError = new Error(`API key doesn't have permission for model "${model}". Trying next model...`);
+          console.warn(`Permission denied for model ${model}, trying next model...`);
+          continue;
+        }
+
+        // For other errors, try next model
+        lastError = new Error(`Model "${model}" failed: ${errorMessage}`);
+        console.warn(`Model ${model} failed with error: ${errorMessage}`);
         continue;
       }
 
