@@ -88,6 +88,14 @@ console.log('First key starts with:', GEMINI_API_KEYS[0] ? GEMINI_API_KEYS[0].su
 console.log('Raw GEMINI_API_KEYS:', process.env.GEMINI_API_KEYS);
 console.log('Processed keys:', GEMINI_API_KEYS.map((key, i) => `${i + 1}: ${key.substring(0, 15)}... (${key.length} chars)`));
 
+// Check available models for the first few API keys on startup
+console.log('🔍 Checking available Gemini models...');
+setTimeout(async () => {
+  for (let i = 0; i < Math.min(3, GEMINI_API_KEYS.length); i++) {
+    await listAvailableModels(GEMINI_API_KEYS[i]);
+  }
+}, 1000);
+
 if (!FLUTTERWAVE_SECRET_KEY) {
   console.error('ERROR: FLUTTERWAVE_SECRET_KEY environment variable is required!');
   console.error('Please create a .env file with FLUTTERWAVE_SECRET_KEY=your_key');
@@ -169,6 +177,54 @@ app.get('/health', (req, res) => {
     environment: NODE_ENV 
   });
 });
+
+// Debug endpoint to check available models
+app.get('/debug/models', async (req, res) => {
+  try {
+    const results = [];
+    for (let i = 0; i < Math.min(3, GEMINI_API_KEYS.length); i++) {
+      const models = await listAvailableModels(GEMINI_API_KEYS[i]);
+      results.push({
+        keyIndex: i + 1,
+        keyPreview: GEMINI_API_KEYS[i].substring(0, 10) + '...',
+        models: models?.map(m => ({ name: m.name, displayName: m.displayName })) || []
+      });
+    }
+    res.json({
+      success: true,
+      apiVersion: GEMINI_API_VERSION,
+      results
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * List available models for an API key
+ */
+async function listAvailableModels(apiKey) {
+  try {
+    const apiUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models?key=${apiKey}`;
+    const response = await fetch(apiUrl);
+    
+    if (!response.ok) {
+      console.error(`Failed to list models for key ${apiKey.substring(0, 10)}...: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    console.log(`Available models for key ${apiKey.substring(0, 10)}...:`, 
+      data.models?.map(m => m.name).filter(m => m.includes('gemini')) || 'No Gemini models found');
+    return data.models || [];
+  } catch (error) {
+    console.error(`Error listing models for key ${apiKey.substring(0, 10)}...:`, error.message);
+    return null;
+  }
+}
 
 /**
  * Generate replies using Gemini API with API key rotation and model fallback
