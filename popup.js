@@ -296,24 +296,42 @@ async function incrementFreeUses() {
 // Extract text from current tab
 async function extractPageText() {
   try {
+    console.log('🔍 Getting active tab...');
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
+    console.log('📋 Tab info:', {
+      id: tab?.id,
+      url: tab?.url,
+      title: tab?.title
+    });
+    
     if (!tab.url || !tab.url.includes('linkedin.com')) {
+      console.error('❌ Not on LinkedIn page:', tab.url);
       throw new Error('Please navigate to a LinkedIn page');
     }
 
+    console.log('🚀 Injecting content script...');
     const results = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       function: extractText
     });
 
+    console.log('📄 Script execution results:', results);
+
     if (!results || !results[0] || !results[0].result) {
+      console.error('❌ No results from script execution');
       throw new Error('Failed to extract page text');
     }
 
+    console.log('✅ Successfully extracted text:', results[0].result?.length || 0, 'characters');
     return results[0].result;
   } catch (error) {
-    console.error('Error extracting page text:', error);
+    console.error('❌ Error extracting page text:', error);
+    console.error('🔍 Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack
+    });
     throw error;
   }
 }
@@ -375,7 +393,6 @@ async function generateReplies(pageText, maxRetries = 3) {
       return data.text;
       
     } catch (error) {
-      console.error(`API attempt ${attempt} failed:`, error.message);
       lastError = error;
       
       // If it's a network error and we have retries left, try again
