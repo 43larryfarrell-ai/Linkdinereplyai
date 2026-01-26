@@ -41,11 +41,10 @@ let currentKeyIndex = 0;
 const rateLimitedKeys = new Set();
 const GEMINI_API_VERSION = 'v1';
 const GEMINI_MODEL_OPTIONS = [
-  'gemini-2.0-flash-exp',
-  'gemini-2.0-flash',
-  'gemini-1.5-pro',
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-pro-latest',
   'gemini-1.5-flash',
-  'gemini-1.5-flash-8b',
+  'gemini-1.5-pro',
   'gemini-pro',
   'gemini-pro-vision'
 ];
@@ -55,8 +54,19 @@ console.log('🔑 Available API keys:', GEMINI_API_KEYS.length);
 console.log('🤖 Model options:', GEMINI_MODEL_OPTIONS);
 console.log('🌍 Environment:', NODE_ENV);
 
+// Validate API keys on startup
+if (GEMINI_API_KEYS.length === 0) {
+  console.error('❌ CRITICAL: No Gemini API keys configured!');
+  console.error('Please set GEMINI_API_KEYS environment variable with your Gemini API key(s)');
+  console.error('Get your API key from: https://makersuite.google.com/app/apikey');
+}
+
 // Function to get next available API key
 function getNextApiKey() {
+  if (GEMINI_API_KEYS.length === 0) {
+    throw new Error('No Gemini API keys configured. Please set GEMINI_API_KEYS environment variable.');
+  }
+  
   let attempts = 0;
   while (attempts < GEMINI_API_KEYS.length) {
     const keyIndex = currentKeyIndex % GEMINI_API_KEYS.length;
@@ -304,6 +314,56 @@ app.get('/debug/models', async (req, res) => {
   }
 });
 
+// Quick model test endpoint
+app.get('/debug/test-models', async (req, res) => {
+  try {
+    const testResults = [];
+    for (const model of GEMINI_MODEL_OPTIONS) {
+      for (let i = 0; i < Math.min(2, GEMINI_API_KEYS.length); i++) {
+        const apiKey = GEMINI_API_KEYS[i];
+        const apiUrl = `https://generativelanguage.googleapis.com/${GEMINI_API_VERSION}/models/${model}:generateContent?key=${apiKey}`;
+        
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: "test" }] }]
+            })
+          });
+          
+          testResults.push({
+            model,
+            keyIndex: i + 1,
+            status: response.status,
+            success: response.ok
+          });
+          
+          if (response.ok) break; // Found working key for this model
+        } catch (error) {
+          testResults.push({
+            model,
+            keyIndex: i + 1,
+            status: 'error',
+            success: false,
+            error: error.message
+          });
+        }
+      }
+    }
+    
+    res.json({
+      success: true,
+      testResults
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 /**
  * List available models for an API key
  */
@@ -453,6 +513,15 @@ app.post('/api/generate-reply',
     console.log('📄 Request body:', req.body);
     
     try {
+      // Check if API keys are configured
+      if (GEMINI_API_KEYS.length === 0) {
+        return res.status(500).json({
+          success: false,
+          error: 'Service configuration error: Gemini API keys not configured',
+          message: 'The AI service is not properly configured. Please contact the administrator.'
+        });
+      }
+      
       // Check validation errors
       const errors = validationResult(req);
       console.log('✅ Validation errors:', errors.array());
