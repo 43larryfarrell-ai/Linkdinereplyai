@@ -42,11 +42,12 @@ const rateLimitedKeys = new Set();
 const GEMINI_API_VERSION = 'v1';
 const GEMINI_MODEL_OPTIONS = [
   'gemini-1.5-flash-latest',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
-  'gemini-pro',
-  'gemini-pro-vision'
+  'gemini-1.5-pro-latest', 
+  'gemini-1.0-pro-latest',
+  'gemini-1.0-pro',
+  'text-bison-001',
+  'chat-bison-001',
+  'gemini-pro' // Basic fallback
 ];
 
 // Debug: Check API keys and models
